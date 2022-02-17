@@ -4,6 +4,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as path from 'path';
 import * as apigateway2 from '@aws-cdk/aws-apigatewayv2';
 import * as httpPackage from '@aws-cdk/aws-apigatewayv2-integrations';
+import { WebSocketLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
 
 
 export class HelloCdkStack extends cdk.Stack {
@@ -26,11 +27,39 @@ export class HelloCdkStack extends cdk.Stack {
     var httpApi = new apigateway2.HttpApi(this, 'first_httpApi', {
       createDefaultStage: true
     });
-    httpApi.addRoutes({
-      path: "/html_route", 
-      methods:[apigateway2.HttpMethod.GET], 
-      integration: new httpPackage.LambdaProxyIntegration({handler: first_html_var})
+
+    var connect_lambda = new lambda.Function(this, 'connect_lambda_function', {
+      code: lambda.Code.fromAsset(path.join(__dirname, "../src/lam/")),
+      handler: 'connect.lambda_handler',
+      runtime: lambda.Runtime.PYTHON_3_9
     });
+
+    var disconnect_lambda = new lambda.Function(this, 'disconnect_lambda_function', {
+      code: lambda.Code.fromAsset(path.join(__dirname, "../src/lam/")),
+      handler: 'disconnect.lambda_handler',
+      runtime: lambda.Runtime.PYTHON_3_9
+    });
+
+    const webSocketApi = new apigateway2.WebSocketApi(this, 'mywsapi', {
+      connectRouteOptions: {integration: new WebSocketLambdaIntegration("connect_lambda_integration", connect_lambda)},
+      disconnectRouteOptions: {integration: new WebSocketLambdaIntegration("disconnect_lambda_integration", disconnect_lambda)} 
+    });
+    new apigateway2.WebSocketStage(this, 'mystage', {
+      webSocketApi,
+      stageName: 'dev',
+      autoDeploy: true,
+    });
+
+    // declare const messageHandler: lambda.Function;
+    // webSocketApi.addRoute('sendmessage', {
+    //   integration: new WebSocketLambdaIntegration('SendMessageIntegration', messageHandler),
+    // });
+
+    // httpApi.addRoutes({
+    //   path: "/html_route", 
+    //   methods:[apigateway2.HttpMethod.GET], 
+    //   integration: new httpPackage.LambdaProxyIntegration({handler: first_html_var})
+    // });
     new cdk.CfnOutput(this, 'gateway_url', {
         value: httpApi.url ? httpApi.url : "None"
     });
