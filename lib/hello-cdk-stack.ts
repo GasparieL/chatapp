@@ -40,15 +40,32 @@ export class HelloCdkStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_9
     });
 
+    var sendmessage_lambda = new lambda.Function(this, 'sendmessage_lambda_function', {
+      code: lambda.Code.fromAsset(path.join(__dirname, "../src/lam/")),
+      handler: 'sendmessage.lambda_handler',
+      runtime: lambda.Runtime.PYTHON_3_9
+    });
+
+
     const webSocketApi = new apigateway2.WebSocketApi(this, 'mywsapi', {
       connectRouteOptions: {integration: new WebSocketLambdaIntegration("connect_lambda_integration", connect_lambda)},
       disconnectRouteOptions: {integration: new WebSocketLambdaIntegration("disconnect_lambda_integration", disconnect_lambda)} 
     });
-    new apigateway2.WebSocketStage(this, 'mystage', {
+    webSocketApi.addRoute("sendmessage_route", 
+         {integration: new WebSocketLambdaIntegration("sendmessage_lambda_integration", sendmessage_lambda) } )
+
+
+
+    let mystage_websocket = new apigateway2.WebSocketStage(this, 'mystage', {
       webSocketApi,
       stageName: 'dev',
       autoDeploy: true,
     });
+
+    sendmessage_lambda.addEnvironment("CALLBACK_URL_MYSTAGE", mystage_websocket.callbackUrl);
+    webSocketApi.grantManageConnections(sendmessage_lambda);
+
+
 
     // declare const messageHandler: lambda.Function;
     // webSocketApi.addRoute('sendmessage', {
