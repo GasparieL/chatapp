@@ -1,8 +1,9 @@
 import json
 import urllib3
 import boto3
+import os
 
-client = boto3.client('apigatewaymanagementapi', endpoint_url="xxxxxx.com/production")
+client = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('CALLBACK_URL_MYSTAGE'))
 
 def lambda_handler(event, context):
     

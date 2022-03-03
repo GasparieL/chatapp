@@ -16,6 +16,7 @@ ws_url = "wss://bebcak5d22.execute-api.us-west-1.amazonaws.com/dev"
 
 async def hello():
     async with websockets.connect(ws_url) as websocket:
+        print(websocket)
         msg = { "action": "sendmessage_route", "message": "Hello world!" }
         await websocket.send(json.dumps(msg))
         while True:

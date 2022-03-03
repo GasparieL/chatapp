@@ -6,7 +6,6 @@ import os
 client = boto3.client('apigatewaymanagementapi', endpoint_url=os.getenv('CALLBACK_URL_MYSTAGE'))
 
 def lambda_handler(event, context):
-    print(event)
     
     #Extract connectionId from incoming event
     connectionId = event["requestContext"]["connectionId"]
